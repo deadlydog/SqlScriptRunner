@@ -1,0 +1,84 @@
+﻿<Window x:Class="SQL_Runner.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SQL Runner - Created by Daniel Schroeder - v1.1.8" Height="683" Width="800" Icon="/SQL%20Runner;component/Images/icon.jpg">
+	<Window.Resources>
+		<BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+		
+		<!-- Default all tooltips to show for 60 seconds -->
+		<Style TargetType="{x:Type Button}">
+			<Setter Property="ToolTipService.ShowDuration" Value="60000" />
+		</Style>
+		<Style TargetType="{x:Type MenuItem}">
+			<Setter Property="ToolTipService.ShowDuration" Value="60000" />
+		</Style>
+		<Style TargetType="{x:Type TextBox}">
+			<Setter Property="ToolTipService.ShowDuration" Value="60000" />
+		</Style>
+		<Style TargetType="{x:Type CheckBox}">
+			<Setter Property="ToolTipService.ShowDuration" Value="60000" />
+		</Style>
+		<Style TargetType="{x:Type ComboBox}">
+			<Setter Property="ToolTipService.ShowDuration" Value="60000" />
+		</Style>
+		<Style TargetType="{x:Type ListBox}">
+			<Setter Property="ToolTipService.ShowDuration" Value="60000" />
+		</Style>
+	</Window.Resources>
+	<Grid>
+		<Button Content="Browse..." Height="23" HorizontalAlignment="Left" Margin="12,97,0,0" Name="btnBrowseForScriptDirectory" VerticalAlignment="Top" Width="75" Click="btnBrowseForScriptDirectory_Click" ToolTip="Browse to find the directory containing the SQL scripts (e.g. stored procedures)." />
+		<ComboBox ItemsSource="{Binding Path=Settings.ScriptDirectories, Mode=OneWay}" DisplayMemberPath="" Height="23" HorizontalAlignment="Left" Margin="93,97,0,0" Name="cboScriptDirectories" VerticalAlignment="Top" Width="556" IsEditable="True" DropDownClosed="cboScriptDirectories_DropDownClosed" KeyDown="cboScriptDirectories_KeyDown" KeyUp="cboScriptDirectories_KeyUp">
+			<ComboBox.ToolTip>
+				<TextBlock>The directory containing the scripts to run against the database.<LineBreak />
+							Press Enter to commit the current text to the combo boxes items.</TextBlock>
+			</ComboBox.ToolTip>
+		</ComboBox>
+		<Button Content="Refresh" Height="23" HorizontalAlignment="Left" Margin="694,97,0,0" Name="btnRefreshScriptsList" VerticalAlignment="Top" Width="68" Click="btnRefreshScriptsList_Click" ToolTip="Click to refesh the list of scripts to run from the currently selected directory." />
+		<ListBox Height="211" HorizontalAlignment="Left" Margin="10,143,0,0" Name="listScriptsToRun" VerticalAlignment="Top" Width="752" SelectionMode="Extended" KeyDown="listScriptsToRun_KeyDown">
+			<ListBox.ToolTip>
+				<TextBlock>The scripts to run against the database.<LineBreak />
+							Use the Delete key to remove selected items from the list, or click the Remove Selected Scripts button.</TextBlock>
+			</ListBox.ToolTip>
+		</ListBox>
+		<Button Height="72" HorizontalAlignment="Left" Margin="666,518,0,0" Name="btnSaveAndExit" VerticalAlignment="Top" Width="100" Content="Save and Exit" Click="btnSaveAndExit_Click" ToolTip="Save the current settings and exit." />
+		<Button Content="Exit" Height="40" HorizontalAlignment="Left" Margin="666,596,0,0" Name="btnExit" VerticalAlignment="Top" Width="100" Click="btnExit_Click" ToolTip="Exit the application." />
+		<Button Content="Remove Selected Scripts" Height="40" HorizontalAlignment="Left" Margin="10,360,0,0" Name="btnRemoveSelectedScripts" VerticalAlignment="Top" Width="166" ToolTip="Click to remove all of the selected scripts from the list of scripts to run." Click="btnRemoveSelectedScripts_Click" />
+		<Button Content="RUN SQL SCRIPTS" Height="67" HorizontalAlignment="Left" Margin="569,360,0,0" Name="btnRunScripts" VerticalAlignment="Top" Width="197" ToolTip="Click to run all of the listed scripts against the specified database." Click="btnRunScripts_Click" />
+		<Label Content="Have you updated your scripts to the latest version?" Height="28" HorizontalAlignment="Left" Margin="12,8,0,0" Name="label2" VerticalAlignment="Top" />
+		<Label Content="SQL Server IP:" Height="28" HorizontalAlignment="Left" Margin="10,42,0,0" Name="label3" VerticalAlignment="Top" />
+		<Label Content="Database to run against:" Height="28" HorizontalAlignment="Left" Margin="379,41,0,0" Name="label4" VerticalAlignment="Top" />
+        <ComboBox ItemsSource="{Binding Path=DatabaseNames, Mode=OneWay}" DisplayMemberPath="" Height="23" HorizontalAlignment="Left" Margin="516,43,0,0" Name="cboDatabaseNames" VerticalAlignment="Top" Width="246" IsEditable="False" KeyUp="cboDatabaseNames_KeyUp" DropDownClosed="cboDatabaseNames_DropDownClosed" ToolTip="The name of the database to run the scripts against." />
+		<ComboBox ItemsSource="{Binding Path=Settings.ServerIPs, Mode=OneWay}" DisplayMemberPath="" Height="23" HorizontalAlignment="Left" IsEditable="True" Margin="93,43,0,0" Name="cboServerIPs" VerticalAlignment="Top" Width="148" KeyUp="cboServerIPs_KeyUp" KeyDown="cboServerIPs_KeyDown" DropDownClosed="cboServerIPs_DropDownClosed" Text="10.200.23.10">
+			<ComboBox.ToolTip>
+				<TextBlock>The IP Address of the SQL Server to connect to.<LineBreak />
+							Press Enter to commit the current text to the combo boxes items.</TextBlock>
+			</ComboBox.ToolTip>
+		</ComboBox>
+		<Button Content="X" Height="23" HorizontalAlignment="Left" Margin="655,97,0,0" Name="btnRemoveScriptDirectory" VerticalAlignment="Top" Width="25" Click="btnRemoveScriptDirectory_Click" ToolTip="Click to remove the current Path from the combo boxes list of directory paths." />
+		<Button Content="X" Height="23" HorizontalAlignment="Left" Margin="247,43,0,0" Name="btnRemoveServerIP" VerticalAlignment="Top" Width="25" Click="btnRemoveServerIP_Click" ToolTip="Click to remove the current Server IP from the combo boxes list of IPs." />
+		<TextBox Height="203" HorizontalAlignment="Left" Margin="12,433,0,0" Name="txtOutput" VerticalAlignment="Top" Width="640" AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+		<Label Content="SQL scripts to run:" Height="28" HorizontalAlignment="Left" Margin="12,118,0,0" Name="label1" VerticalAlignment="Top" />
+		<Label Content="Output:" Height="28" HorizontalAlignment="Left" Margin="12,406,0,0" Name="label5" VerticalAlignment="Top" />
+		<CheckBox Content="Copy Scripts That Fail To Run To Directory..." IsChecked="{Binding Path=Settings.CopyFailedScriptsToFailedDirectory, Mode=TwoWay}" Height="16" HorizontalAlignment="Left" Margin="182,360,0,0" Name="chkCopyFailedScriptsToFailedDirectory" VerticalAlignment="Top" ToolTip="If checked, this will copy any scripts that fail to run into a specified directory." />
+		<TextBox Height="23" HorizontalAlignment="Left" Margin="182,383,0,0" Name="txtFailedScriptsDirectory" VerticalAlignment="Top" Width="337" Text="{Binding Path=Settings.FailedScriptsDirectory, Mode=TwoWay}" Visibility="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}">
+			<TextBox.ToolTip>
+				<TextBlock>The directory to copy any scripts that fail to run into.<LineBreak />
+							If this is left blank a 'Failed Scripts' directory will be created in the same directory as the scripts, and scripts that fail to run will be copied there.</TextBlock>
+			</TextBox.ToolTip>
+		</TextBox>
+		<Button Content="..." Height="23" HorizontalAlignment="Left" Margin="525,382,0,0" Name="btnBrowseForFailedScriptsDirectory" VerticalAlignment="Top" Width="27" Visibility="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}" ToolTip="Browse for the directory to copy scripts that fail to run to." Click="btnBrowseForFailedScriptsDirectory_Click" />
+		<Button Content="Force Connect" Height="23" HorizontalAlignment="Left" Margin="278,43,0,0" Name="btnForceConnect" VerticalAlignment="Top" Width="92" Click="btnForceConnect_Click">
+			<Button.ToolTip>
+				<TextBlock>Click this to FORCE a connection to get the list of database names.<LineBreak />
+							Use this when you are sure the SQL Server IP is correct, but no Database Names are loading.<LineBreak /></TextBlock>
+			</Button.ToolTip>
+		</Button>
+		<Label Content="Directory containing SQL Scripts To Run:" Height="28" HorizontalAlignment="Left" Margin="12,70,0,0" Name="label6" VerticalAlignment="Top" />
+		<CheckBox Content="Only allow CREATE / ALTER PROCEDURE and FUNCTION scripts to run" Height="16" HorizontalAlignment="Left" Margin="374,13,0,0" Name="chkOnlyRunSprocsAndFunctions" VerticalAlignment="Top" IsChecked="True">
+			<CheckBox.ToolTip>
+				<TextBlock>If checked, only scripts that contain "create procedure", "alter procedure", "create function", or "alter function" will run.<LineBreak />
+							This is to help prevent accidentally running changescripts. To run changescripts you must uncheck this.</TextBlock>
+			</CheckBox.ToolTip>
+		</CheckBox>
+	</Grid>
+</Window>
