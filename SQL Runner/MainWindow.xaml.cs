@@ -116,7 +116,7 @@ namespace SQL_Runner
 
 			// Initialize the settings
 			this.Settings = new SQLRunnerSettings();
-			this.Settings.ServerIP = "10.200.23.10";	// Default IP in case no settings are loaded
+			this.Settings.ServerIP = "localhost";	// Default IP in case no settings are loaded
 			DatabaseNames = new ObservableCollection<string>();
 
 			// Set the paths where the Data to save/load can be found.
@@ -197,6 +197,10 @@ namespace SQL_Runner
 			{
 				// Get the list of database names from the default server, and then exit without loading any other settings
 				GetDatabaseNames();
+
+				// Show the default server that we're connecting to.
+				cboServerIPs.Text = this.Settings.ServerIP;
+
 				return false;
 			}
 
