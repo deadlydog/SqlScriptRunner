@@ -61,13 +61,13 @@
 		<Label Content="SQL scripts to run:" Height="28" HorizontalAlignment="Left" Margin="10,160,0,0" Name="label1" VerticalAlignment="Top" />
 		<Label Content="Output:" Height="28" HorizontalAlignment="Left" Margin="12,449,0,0" Name="label5" VerticalAlignment="Top" />
 		<CheckBox Content="Copy Scripts That Fail To Run To Directory..." IsChecked="{Binding Path=Settings.CopyFailedScriptsToFailedDirectory, Mode=TwoWay}" Height="16" HorizontalAlignment="Left" Margin="182,403,0,0" Name="chkCopyFailedScriptsToFailedDirectory" VerticalAlignment="Top" ToolTip="If checked, this will copy any scripts that fail to run into a specified directory." />
-		<TextBox Height="23" HorizontalAlignment="Left" Margin="182,383,0,0" Name="txtFailedScriptsDirectory" VerticalAlignment="Top" Width="337" Text="{Binding Path=Settings.FailedScriptsDirectory, Mode=TwoWay}" Visibility="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}">
+		<TextBox Height="23" HorizontalAlignment="Left" Margin="182,420,0,0" Name="txtFailedScriptsDirectory" VerticalAlignment="Top" Width="337" Text="{Binding Path=Settings.FailedScriptsDirectory, Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked}">
 			<TextBox.ToolTip>
 				<TextBlock>The directory to copy any scripts that fail to run into.<LineBreak />
 							If this is left blank a 'Failed Scripts' directory will be created in the same directory as the scripts, and scripts that fail to run will be copied there.</TextBlock>
 			</TextBox.ToolTip>
 		</TextBox>
-		<Button Content="..." Height="23" HorizontalAlignment="Left" Margin="525,382,0,0" Name="btnBrowseForFailedScriptsDirectory" VerticalAlignment="Top" Width="27" Visibility="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}" ToolTip="Browse for the directory to copy scripts that fail to run to." Click="btnBrowseForFailedScriptsDirectory_Click" />
+		<Button Content="..." Height="23" HorizontalAlignment="Left" Margin="525,420,0,0" Name="btnBrowseForFailedScriptsDirectory" VerticalAlignment="Top" Width="27" IsEnabled="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked}" ToolTip="Browse for the directory to copy scripts that fail to run to." Click="btnBrowseForFailedScriptsDirectory_Click" />
 		<Button Content="Force Connect" Height="23" HorizontalAlignment="Left" Margin="345,13,0,0" Name="btnForceConnect" VerticalAlignment="Top" Width="92" Click="btnForceConnect_Click">
 			<Button.ToolTip>
 				<TextBlock>Click this to FORCE a connection to get the list of database names.<LineBreak />
