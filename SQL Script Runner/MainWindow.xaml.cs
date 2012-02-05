@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,7 +23,7 @@ using System.Text.RegularExpressions;
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace SQL_Runner
+namespace SQL_Script_Runner
 {
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
@@ -40,7 +42,7 @@ namespace SQL_Runner
 		/// <summary>
 		/// Holds the current settings.
 		/// </summary>
-		public SQLRunnerSettings Settings { get; set; }
+		public SQLScriptRunnerSettings Settings { get; set; }
 
 		/// <summary>
 		/// Path to the settings file to save and load.
@@ -71,6 +73,11 @@ namespace SQL_Runner
 		BackgroundWorker _databaseNameWorker = null;
 
 		/// <summary>
+		/// Key used to encrypt/decrypt the password for storage in the Settings file.
+		/// </summary>
+		private const string ENCRYPT_DECRYPT_KEY = "SQLScriptRunner";
+
+		/// <summary>
 		/// Class used to pass settings into the Script Runner background worker.
 		/// </summary>
 		class ScriptRunnerWorkerSettings
@@ -84,6 +91,21 @@ namespace SQL_Runner
 			/// The SQL database to run against.
 			/// </summary>
 			public string DatabaseName = string.Empty;
+
+			/// <summary>
+			/// Tells if we should connect to the SQL server using Integrated Security or not.
+			/// </summary>
+			public bool UseIntegreatedSecurity = true;
+
+			/// <summary>
+			/// The username to connect with if we are not using Integrated Security.
+			/// </summary>
+			public string Username = string.Empty;
+
+			/// <summary>
+			/// The password to connect with if we are not using Integrated Security.
+			/// </summary>
+			public string Password = string.Empty;
 
 			/// <summary>
 			/// A list of all of the SQL script files to run.
@@ -115,12 +137,11 @@ namespace SQL_Runner
 			this.DataContext = this;
 
 			// Initialize the settings
-			this.Settings = new SQLRunnerSettings();
-			this.Settings.ServerIP = "localhost";	// Default IP in case no settings are loaded
+			this.Settings = new SQLScriptRunnerSettings();
 			DatabaseNames = new ObservableCollection<string>();
 
 			// Set the paths where the Data to save/load can be found.
-			SETTINGS_FILE_PATH = Directory.GetCurrentDirectory() + "\\SQLRunnerSettings.xml";
+			SETTINGS_FILE_PATH = Directory.GetCurrentDirectory() + "\\SqlScriptRunnerSettings.xml";
 
 			_scriptRunnerWorker = new BackgroundWorker();
 			_scriptRunnerWorker.DoWork += new DoWorkEventHandler(_scriptRunnerWorker_DoWork);
@@ -150,7 +171,7 @@ namespace SQL_Runner
 		/// <returns>Returns true if the save was successful, false if not.</returns>
 		public bool SaveSettings()
 		{
-			// Reorder the combo boxes alphabetically before saving
+			// Reorder the combo boxes alphabetically before saving.
 			List<string> directories = Settings.ScriptDirectories.OrderBy(x => x.ToString()).ToList<string>();
 			List<string> servers = Settings.ServerIPs.OrderBy(x => x.ToString()).ToList<string>();
 			Settings.ScriptDirectories.Clear();
@@ -160,11 +181,17 @@ namespace SQL_Runner
 			foreach (string server in servers)
 				Settings.ServerIPs.Add(server);
 
+			// Only save the password if Remember Password is checked, and encrypt it before saving it to the file.
+			if (chkRememberPassword.IsChecked ?? false)
+				Settings.Password = Crypto.EncryptStringAES(pasPassword.Password, ENCRYPT_DECRYPT_KEY);
+			else
+				Settings.Password = string.Empty;
+
 			TextWriter writer = null;
 			try
 			{
 				// Serialize the settings into XML format.
-				XmlSerializer serializer = new XmlSerializer(typeof(SQLRunnerSettings));
+				XmlSerializer serializer = new XmlSerializer(typeof(SQLScriptRunnerSettings));
 				writer = new StreamWriter(SETTINGS_FILE_PATH);
 				serializer.Serialize(writer, this.Settings);
 			}
@@ -195,11 +222,11 @@ namespace SQL_Runner
 			// If the Settings file to load does not exist
 			if (!File.Exists(SETTINGS_FILE_PATH))
 			{
-				// Get the list of database names from the default server, and then exit without loading any other settings
+				// Get the list of database names from the default server, and then exit without loading any other settings.
 				GetDatabaseNames();
 
-				// Show the default server that we're connecting to.
-				cboServerIPs.Text = this.Settings.ServerIP;
+				// Show the default settings in the UI.
+				UpdateUIToReflectSettingsValuesForPropertiesNotUsingBinding();
 
 				return false;
 			}
@@ -208,9 +235,9 @@ namespace SQL_Runner
 			try
 			{
 				// De-serialize the settings.
-				XmlSerializer serializer = new XmlSerializer(typeof(SQLRunnerSettings));
+				XmlSerializer serializer = new XmlSerializer(typeof(SQLScriptRunnerSettings));
 				reader = new StreamReader(SETTINGS_FILE_PATH);
-				SQLRunnerSettings data = (SQLRunnerSettings)serializer.Deserialize(reader);
+				SQLScriptRunnerSettings data = (SQLScriptRunnerSettings)serializer.Deserialize(reader);
 
 				// Copy the loaded data into this class instance
 				Settings.CopyFrom(data);
@@ -228,25 +255,45 @@ namespace SQL_Runner
 					reader.Close();
 			}
 
-			// Update any bindings
-			NotifyThatAllPropertiesWereChanged();
-
 			// Set the default database name to use
 			_lastDatabaseName = Settings.DatabaseName;
 
 			// Get the list of database names available on the specified server
 			GetDatabaseNames();
 
-			// Set the combo box text
-			cboServerIPs.Text = Settings.ServerIP;
-			cboDatabaseNames.Text = Settings.DatabaseName;
-			cboScriptDirectories.Text = Settings.ScriptDirectory;
+			// If a password was loaded from the Settings
+			if (!string.IsNullOrEmpty(Settings.Password))
+			{
+				// Remember Password must have been checked to save the password, so make sure it is checked again now that we've loaded the password.
+				chkRememberPassword.IsChecked = true;
+
+				// Get the password.
+				Settings.Password = Crypto.DecryptStringAES(Settings.Password, ENCRYPT_DECRYPT_KEY);
+			}
+
+			// Show the settings being used on the UI.
+			UpdateUIToReflectSettingsValuesForPropertiesNotUsingBinding();
 
 			// Refresh the scripts list to show any scripts in the already chosen directory
 			RefreshScriptsList();
 
+			// Update any bindings
+			NotifyThatAllPropertiesWereChanged();
+
 			// Return success
 			return true;
+		}
+
+		/// <summary>
+		/// Updates the UI to reflect the Settings' values.
+		/// </summary>
+		private void UpdateUIToReflectSettingsValuesForPropertiesNotUsingBinding()
+		{
+			// Set the combo box text
+			cboServerIPs.Text = Settings.ServerIP;
+			cboDatabaseNames.Text = Settings.DatabaseName;
+			cboScriptDirectories.Text = Settings.ScriptDirectory;
+			pasPassword.Password = Settings.Password;
 		}
 
 		/// <summary>
@@ -293,10 +340,13 @@ namespace SQL_Runner
 			ScriptRunnerWorkerSettings workerSettings = new ScriptRunnerWorkerSettings();
 			workerSettings.ServerIP = Settings.ServerIP;
 			workerSettings.DatabaseName = Settings.DatabaseName;
+			workerSettings.UseIntegreatedSecurity = Settings.UseIntegratedSecurity;
+			workerSettings.Username = Settings.Username;
+			workerSettings.Password = Settings.Password;
 			workerSettings.ScriptsToRun = scriptFiles;
 			workerSettings.CopyFailedScriptsToFailedDirectory = Settings.CopyFailedScriptsToFailedDirectory;
 			workerSettings.FailedScriptsDirectory = Settings.FailedScriptsDirectory;
-			workerSettings.OnlyRunProcedureAndFunctionScripts = chkOnlyRunSprocsAndFunctions.IsChecked.Value;
+			workerSettings.OnlyRunProcedureAndFunctionScripts = chkOnlyRunSprocsAndFunctions.IsChecked ?? false;
 
 			// Disable the Output window while running, and run the scripts.
 			DisableControlsWhileRunningScripts();
@@ -306,13 +356,8 @@ namespace SQL_Runner
 		/// <summary>
 		/// Applies the stored procedures to DB.
 		/// </summary>
-		/// <param name="serverIP">The IP address of the SQL server to connect to.</param>
-		/// <param name="databaseName">The SQL database to run against.</param>
-		/// <param name="scriptsToRun">A list of all of the SQL script files to run.</param>
-		/// <param name="copyFailedScriptsToFailedDirectory">If true, any scripts that fail to run will be copied to the Failed Scripts Directory.</param>
-		/// <param name="failedScriptsDirectory">The directory to copy any scripts that fail to. If null/empty a new "Failed" directory will be created in the same directory as the script.</param>
-		/// <param name="onlyRunProcedureAndFunctionScripts">If true, only scripts that contain "create procedure", "alter procedure", "create function", or "alter function" will run.</param>
-		private string ApplyStoredProceduresToDB(string serverIP, string databaseName, List<FileInfo> scriptsToRun, bool copyFailedScriptsToFailedDirectory, string failedScriptsDirectory, bool onlyRunProcedureAndFunctionScripts)
+		/// <param name="settings">The settings to use.</param>
+		private string ApplyStoredProceduresToDB(ScriptRunnerWorkerSettings settings)
 		{
 			StringBuilder output = new StringBuilder();
 			StringBuilder scriptsFailed = new StringBuilder();
@@ -330,16 +375,17 @@ namespace SQL_Runner
 
 			// Setup our connection and connect to the server
 			var serverConnection = new ServerConnection();
-			serverConnection.ConnectionString = "Data Source=" + serverIP + ";Integrated Security=true;User ID=;Password=;Connect Timeout=30;Initial Catalog=" + databaseName + ";";
+			serverConnection.ConnectionString = string.Format("Data Source={0};Integrated Security={1};User ID={2};Password={3};Connect Timeout=30;Initial Catalog={4};", 
+				settings.ServerIP, settings.UseIntegreatedSecurity ? "true" : "false", settings.Username, settings.Password, settings.DatabaseName);
 			var server = new Server(serverConnection);
 			var db = server.Databases[server.ConnectionContext.SqlConnectionObject.Database];
-			output.AppendLine("Connection Info: " + serverConnection.ConnectionString);
+			output.AppendLine("Connection Info: " + serverConnection.ConnectionString.Replace("Password=" + settings.Password, "Password=[hidden]"));
 			output.AppendLine("=================================================================");
 			output.AppendLine("All Script Summaries (in the order that the scripts were ran)");
 			output.AppendLine("=================================================================\n");
 
 			// Apply all of the scripts
-			foreach (FileInfo file in scriptsToRun)
+			foreach (FileInfo file in settings.ScriptsToRun)
 			{
 				// If the file doesn't exist, record it and move onto the next one
 				if (!File.Exists(file.FullName))
@@ -360,7 +406,7 @@ namespace SQL_Runner
 						fileContents = File.ReadAllText(file.FullName);
 						
 						// If we should only run sprocs and functions, make sure this script is one of them
-						if (onlyRunProcedureAndFunctionScripts)
+						if (settings.OnlyRunProcedureAndFunctionScripts)
 						{
 							// If this is not a sproc or function (i.e. it is a changescript)
 							if (!IsScriptAProcedureOrFunction(fileContents))
@@ -404,18 +450,18 @@ namespace SQL_Runner
 					output.Append(failedTemp += "--------------------------------------------------------------------------------------------\n");
 
 					// If we should copy the scripts that fail to a new folder
-					if (copyFailedScriptsToFailedDirectory)
+					if (settings.CopyFailedScriptsToFailedDirectory)
 					{
 						// If the scripts should be copied into a Failed directory within its current directory
-						if (string.IsNullOrWhiteSpace(failedScriptsDirectory))
-							failedScriptsDirectory = file.Directory + "\\Failed Scripts";
+						if (string.IsNullOrWhiteSpace(settings.FailedScriptsDirectory))
+							settings.FailedScriptsDirectory = file.Directory + "\\Failed Scripts";
 						
 						// Get the path to the Failed directory, and create it if it doesn't exist
-						if (!Directory.Exists(failedScriptsDirectory))
-							Directory.CreateDirectory(failedScriptsDirectory);
+						if (!Directory.Exists(settings.FailedScriptsDirectory))
+							Directory.CreateDirectory(settings.FailedScriptsDirectory);
 
 						// Copy the script file to the Failed directory
-						File.Copy(file.FullName, failedScriptsDirectory + "\\" + file.Name, true);
+						File.Copy(file.FullName, settings.FailedScriptsDirectory + "\\" + file.Name, true);
 					}
 				}
 			}
@@ -442,7 +488,7 @@ namespace SQL_Runner
 			output.Append("\n======================= Condensed Run Summary ========================\n");
 
 			// Calculate some stats
-			int totalNumberOfScriptsToRun = scriptsToRun.Count;
+			int totalNumberOfScriptsToRun = settings.ScriptsToRun.Count;
 			int numberOfScriptsThatSucceeded = (totalNumberOfScriptsToRun - numberOfScriptsThatFailed - numberOfScriptsThatWerePurposelyNotRanBecauseTheyAreNotSprocsOrFunctions);
 
 			// Display how many scripts run successfully.
@@ -481,7 +527,7 @@ namespace SQL_Runner
 		{
 			// Run the sprocs and save the output in the Result
 			ScriptRunnerWorkerSettings workerSettings = e.Argument as ScriptRunnerWorkerSettings;
-			e.Result = ApplyStoredProceduresToDB(workerSettings.ServerIP, workerSettings.DatabaseName, workerSettings.ScriptsToRun, workerSettings.CopyFailedScriptsToFailedDirectory, workerSettings.FailedScriptsDirectory, workerSettings.OnlyRunProcedureAndFunctionScripts);
+			e.Result = ApplyStoredProceduresToDB(workerSettings);
 		}
 
 		/// <summary>

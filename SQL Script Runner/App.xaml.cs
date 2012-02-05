@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Windows;
 
-namespace SQL_Runner
+namespace SQL_Script_Runner
 {
 	/// <summary>
 	/// Interaction logic for App.xaml

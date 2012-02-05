@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace SQL_Runner
+namespace SQL_Script_Runner
 {
 	/// <summary>
 	/// Class used to hold the settings to save/load.
 	/// </summary>
-	public class SQLRunnerSettings : INotifyPropertyChanged
+	public class SQLScriptRunnerSettings : INotifyPropertyChanged
 	{
 		#region INotifyPropertyChanged
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -59,24 +60,43 @@ namespace SQL_Runner
 		public string FailedScriptsDirectory { get; set; }
 
 		/// <summary>
+		/// Tells if Integrated Security should be used to connect to the database server, instead of using a Username and Password.
+		/// </summary>
+		public bool UseIntegratedSecurity { get; set; }
+
+		/// <summary>
+		/// The username to connect to the database server with.
+		/// </summary>
+		public string Username { get; set; }
+
+		/// <summary>
+		/// The password to connect to the database server with.
+		/// </summary>
+		public string Password { get; set; }
+
+		/// <summary>
 		/// Constructor
 		/// </summary>
-		public SQLRunnerSettings()
+		public SQLScriptRunnerSettings()
 		{
+			// Setup the default settings.
 			ScriptDirectory = string.Empty;
 			ScriptDirectories = new ObservableCollection<string>();
-			ServerIP = string.Empty;
+			ServerIP = "localhost";
 			ServerIPs = new ObservableCollection<string>();
 			DatabaseName = string.Empty;
 			CopyFailedScriptsToFailedDirectory = false;
 			FailedScriptsDirectory = string.Empty;
+			UseIntegratedSecurity = true;
+			Username = string.Empty;
+			Password = string.Empty;
 		}
 
 		/// <summary>
 		/// Copies the given Settings into this instance.
 		/// </summary>
 		/// <param name="settingsToCopyFrom">The instance whose settings to copy.</param>
-		public void CopyFrom(SQLRunnerSettings settingsToCopyFrom)
+		public void CopyFrom(SQLScriptRunnerSettings settingsToCopyFrom)
 		{
 			this.ScriptDirectory = settingsToCopyFrom.ScriptDirectory;
 			this.ScriptDirectories = settingsToCopyFrom.ScriptDirectories;
@@ -85,6 +105,9 @@ namespace SQL_Runner
 			this.DatabaseName = settingsToCopyFrom.DatabaseName;
 			this.CopyFailedScriptsToFailedDirectory = settingsToCopyFrom.CopyFailedScriptsToFailedDirectory;
 			this.FailedScriptsDirectory = settingsToCopyFrom.FailedScriptsDirectory;
+			this.UseIntegratedSecurity = settingsToCopyFrom.UseIntegratedSecurity;
+			this.Username = settingsToCopyFrom.Username;
+			this.Password = settingsToCopyFrom.Password;
 		}
 
 		/// <summary>
@@ -99,6 +122,9 @@ namespace SQL_Runner
 			NotifyPropertyChanged("DatabaseName");
 			NotifyPropertyChanged("CopyFailedScriptsToFailedDirectory");
 			NotifyPropertyChanged("FailedScriptsDirectory");
+			NotifyPropertyChanged("UseIntegratedSecurity");
+			NotifyPropertyChanged("Username");
+			NotifyPropertyChanged("Password");
 		}
 	}
 }

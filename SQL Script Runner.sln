@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQL Runner", "SQL Runner\SQL Runner.csproj", "{F5BD1379-6A39-492E-9680-B05EBF1BB4E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQL Script Runner", "SQL Script Runner\SQL Script Runner.csproj", "{F5BD1379-6A39-492E-9680-B05EBF1BB4E7}"
 EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
@@ -9,7 +9,7 @@ Global
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs26
 		SccLocalPath0 = .
-		SccProjectUniqueName1 = SQL\u0020Runner\\SQL\u0020Runner.csproj
+		SccProjectUniqueName1 = SQL\u0020Runner\\SQL\u0020Script\u0020Runner.csproj
 		SccProjectName1 = SQL\u0020Runner
 		SccLocalPath1 = SQL\u0020Runner
 	EndGlobalSection

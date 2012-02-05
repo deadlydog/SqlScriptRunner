@@ -1,4 +1,4 @@
-﻿<Application x:Class="SQL_Runner.App"
+﻿<Application x:Class="SQL_Script_Runner.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
