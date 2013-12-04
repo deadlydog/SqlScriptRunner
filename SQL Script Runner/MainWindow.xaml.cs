@@ -667,9 +667,16 @@ namespace SQL_Script_Runner
 			if (e.Cancel)
 				return;
 
-			// Try and connect to the server. 
-			// This will throw an exception if the connection fails.
-			server.ConnectionContext.Connect();
+			try
+			{
+				// Try and connect to the server. 
+				server.ConnectionContext.Connect();
+			}
+			// Just eat any connection failure exceptions and exit.
+			catch (ConnectionFailureException ex)
+			{
+				return;
+			}
 
 			// If this operation has been cancelled
 			if (e.Cancel)
@@ -798,9 +805,20 @@ namespace SQL_Script_Runner
 			if (string.IsNullOrWhiteSpace(Settings.ScriptDirectory) || !Directory.Exists(Settings.ScriptDirectory))
 				return;
 
+			// Add the directories scripts to the List Box.
+			AddDirectoriesScriptsToListBox(Settings.ScriptDirectory);
+		}
+
+		/// <summary>
+		/// Adds the directories scripts to the Scripts To Run ListBox.
+		/// </summary>
+		/// <param name="directoryPath">The directory path.</param>
+		private void AddDirectoriesScriptsToListBox(string directoryPath)
+		{
 			// Add all of the script files in the directory to the list
-			DirectoryInfo directoryInfo = new DirectoryInfo(Settings.ScriptDirectory);
-			foreach (FileInfo file in directoryInfo.GetFiles("*.sql", SearchOption.TopDirectoryOnly))
+			DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+			var searchOption = Settings.IncludeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+			foreach (FileInfo file in directoryInfo.GetFiles("*.sql", searchOption).Where(f => f.FullName.EndsWith(".sql", StringComparison.InvariantCultureIgnoreCase)))
 			{
 				listScriptsToRun.Items.Add(file);
 			}
@@ -1142,6 +1160,42 @@ namespace SQL_Script_Runner
 
 			// Select the next item in the list, since we've removed all of the previously selected ones
 			listScriptsToRun.SelectedIndex = (highestIndexOfRemovedItems >= listScriptsToRun.Items.Count) ? listScriptsToRun.Items.Count - 1 : highestIndexOfRemovedItems;
+		}
+
+		/// <summary>
+		/// Handles the Drop event of the listScriptsToRun control.
+		/// Adds the selected files and folders dropped onto the list of scripts to run. For dropped
+		/// folders, all files contained within the folder are added (sub-folders are ignored).
+		/// </summary>
+		/// <param name="sender">The source of the event.</param>
+		/// <param name="e">The <see cref="DragEventArgs"/> instance containing the event data.</param>
+		private void listScriptsToRun_Drop(object sender, DragEventArgs e)
+		{
+			var paths = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+			foreach (string path in paths)
+			{
+				// If this is a directory, add any script files within the directory.
+				if (Directory.Exists(path))
+				{
+					AddDirectoriesScriptsToListBox(path);
+				}
+				// Else this is a file, so add it if it is a script file.
+				else if (path.EndsWith(".sql", StringComparison.InvariantCultureIgnoreCase))
+				{
+					listScriptsToRun.Items.Add(new FileInfo(path));
+				}
+			}
+		}
+
+		/// <summary>
+		/// Handles the CheckedChanged event of the chkIncludeSubDirectories control.
+		/// </summary>
+		/// <param name="sender">The source of the event.</param>
+		/// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
+		private void chkIncludeSubDirectories_CheckedChanged(object sender, RoutedEventArgs e)
+		{
+			// Refresh the list of scripts now that the Include Sub Directories options was toggled.
+			RefreshScriptsList();
 		}
 	}
 }

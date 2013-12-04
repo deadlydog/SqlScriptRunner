@@ -30,6 +30,11 @@ namespace SQL_Script_Runner
 		public string ScriptDirectory { get; set; }
 
 		/// <summary>
+		/// If true, scripts from subdirectories of the Script Directory will also be added to the list of scripts to run.
+		/// </summary>
+		public bool IncludeSubDirectories { get; set; }
+
+		/// <summary>
 		/// List holding all of the saved script directories.
 		/// </summary>
 		public ObservableCollection<string> ScriptDirectories { get; set; }
@@ -81,6 +86,7 @@ namespace SQL_Script_Runner
 		{
 			// Setup the default settings.
 			ScriptDirectory = string.Empty;
+			IncludeSubDirectories = false;
 			ScriptDirectories = new ObservableCollection<string>();
 			ServerIP = "localhost";
 			ServerIPs = new ObservableCollection<string>();
@@ -99,6 +105,7 @@ namespace SQL_Script_Runner
 		public void CopyFrom(SQLScriptRunnerSettings settingsToCopyFrom)
 		{
 			this.ScriptDirectory = settingsToCopyFrom.ScriptDirectory;
+			this.IncludeSubDirectories = settingsToCopyFrom.IncludeSubDirectories;
 			this.ScriptDirectories = settingsToCopyFrom.ScriptDirectories;
 			this.ServerIP = settingsToCopyFrom.ServerIP;
 			this.ServerIPs = settingsToCopyFrom.ServerIPs;
@@ -116,6 +123,7 @@ namespace SQL_Script_Runner
 		public void NotifyThatAllPropertiesWereChanged()
 		{
 			NotifyPropertyChanged("ScriptDirectory");
+			NotifyPropertyChanged("IncludeSubDirectories");
 			NotifyPropertyChanged("ScriptDirectories");
 			NotifyPropertyChanged("ServerIP");
 			NotifyPropertyChanged("ServerIPs");

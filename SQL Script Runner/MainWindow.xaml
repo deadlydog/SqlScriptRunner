@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:converters="clr-namespace:SQL_Script_Runner"
-        Title="SQL Script Runner - Created by Daniel Schroeder - v1.2.0" Height="729" Width="800" Icon="/SQL%20Script%20Runner;component/Images/icon.jpg">
+        Title="SQL Script Runner - Created by Daniel Schroeder - v1.3.0" Height="729" Width="800" Icon="/SQL%20Script%20Runner;component/Images/icon.jpg">
 	<Window.Resources>
 		<BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 		<converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
@@ -36,10 +36,15 @@
 			</ComboBox.ToolTip>
 		</ComboBox>
 		<Button Content="Refresh" Height="23" HorizontalAlignment="Left" Margin="694,137,0,0" Name="btnRefreshScriptsList" VerticalAlignment="Top" Width="68" Click="btnRefreshScriptsList_Click" ToolTip="Click to refesh the list of scripts to run from the currently selected directory." />
-		<ListBox Height="211" HorizontalAlignment="Left" Margin="10,186,0,0" Name="listScriptsToRun" VerticalAlignment="Top" Width="752" SelectionMode="Extended" KeyDown="listScriptsToRun_KeyDown" IsManipulationEnabled="False">
+		<ListBox Height="211" HorizontalAlignment="Left" Margin="10,186,0,0" Name="listScriptsToRun" VerticalAlignment="Top" Width="752" SelectionMode="Extended" KeyDown="listScriptsToRun_KeyDown" IsManipulationEnabled="False" AllowDrop="True" Drop="listScriptsToRun_Drop" DisplayMemberPath="FullName">
 			<ListBox.ToolTip>
-				<TextBlock>The scripts to run against the database.<LineBreak />
-							Use the Delete key to remove selected items from the list, or click the Remove Selected Scripts button.</TextBlock>
+				<TextBlock>
+						The scripts to run against the database.<LineBreak />
+						You can also drag and drop files or folders into this list (Include Sub Directories setting will be used).<LineBreak />
+						Only .sql files will be added to this list.<LineBreak />
+						Use the Delete key to remove selected items from the list, or click the Remove Selected Scripts button.<LineBreak />
+						Use the Ctrl and Shift keys to select multiple files at once; Ctrl+A to select all files.	
+				</TextBlock>
 			</ListBox.ToolTip>
 		</ListBox>
 		<Button Height="72" HorizontalAlignment="Left" Margin="666,561,0,0" Name="btnSaveAndExit" VerticalAlignment="Top" Width="100" Click="btnSaveAndExit_Click" Content="Save and Exit" ToolTip="Save the current settings and exit." />
@@ -63,8 +68,11 @@
 		<CheckBox Content="Copy Scripts That Fail To Run To Directory..." IsChecked="{Binding Path=Settings.CopyFailedScriptsToFailedDirectory, Mode=TwoWay}" Height="16" HorizontalAlignment="Left" Margin="182,403,0,0" Name="chkCopyFailedScriptsToFailedDirectory" VerticalAlignment="Top" ToolTip="If checked, this will copy any scripts that fail to run into a specified directory." />
 		<TextBox Height="23" HorizontalAlignment="Left" Margin="182,420,0,0" Name="txtFailedScriptsDirectory" VerticalAlignment="Top" Width="337" Text="{Binding Path=Settings.FailedScriptsDirectory, Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked}">
 			<TextBox.ToolTip>
-				<TextBlock>The directory to copy any scripts that fail to run into.<LineBreak />
-							If this is left blank a 'Failed Scripts' directory will be created in the same directory as the scripts, and scripts that fail to run will be copied there.</TextBlock>
+				<TextBlock>
+					The directory to copy any scripts that fail to run into.<LineBreak />
+					If this is left blank a 'Failed Scripts' directory will be created in the same directory as the script that failed to run, and the script will be copied there.<LineBreak />
+					Take caution when leaving this blank and using the Include Sub Directories setting, as it will include these 'Failed Scripts' directories.
+				</TextBlock>
 			</TextBox.ToolTip>
 		</TextBox>
 		<Button Content="..." Height="23" HorizontalAlignment="Left" Margin="525,420,0,0" Name="btnBrowseForFailedScriptsDirectory" VerticalAlignment="Top" Width="27" IsEnabled="{Binding ElementName=chkCopyFailedScriptsToFailedDirectory, Path=IsChecked}" ToolTip="Browse for the directory to copy scripts that fail to run to." Click="btnBrowseForFailedScriptsDirectory_Click" />
@@ -75,6 +83,7 @@
 			</Button.ToolTip>
 		</Button>
 		<Label Content="Directory containing SQL Scripts To Run:" Height="28" HorizontalAlignment="Left" Margin="10,110,0,0" Name="label6" VerticalAlignment="Top" />
+		<CheckBox Content="Include Sub Directories" x:Name="chkIncludeSubDirectories" HorizontalAlignment="Left" Margin="239,116,0,0" VerticalAlignment="Top" Height="16" IsChecked="{Binding Path=Settings.IncludeSubDirectories, Mode=TwoWay}" ToolTip="If checked, all sub directories will also be searched for scripts to run." Checked="chkIncludeSubDirectories_CheckedChanged" Unchecked="chkIncludeSubDirectories_CheckedChanged" />
 		<CheckBox Content="Only allow CREATE / ALTER PROCEDURE and FUNCTION scripts to run" Height="16" HorizontalAlignment="Left" Margin="14,88,0,0" Name="chkOnlyRunSprocsAndFunctions" VerticalAlignment="Top" IsChecked="True">
 			<CheckBox.ToolTip>
 				<TextBlock>If checked, only scripts that contain "create procedure", "alter procedure", "create function", or "alter function" will run.<LineBreak />

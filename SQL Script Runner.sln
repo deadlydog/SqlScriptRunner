@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQL Script Runner", "SQL Script Runner\SQL Script Runner.csproj", "{F5BD1379-6A39-492E-9680-B05EBF1BB4E7}"
 EndProject
 Global
