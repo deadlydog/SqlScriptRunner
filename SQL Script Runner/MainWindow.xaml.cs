@@ -126,6 +126,11 @@ namespace SQL_Script_Runner
 			/// If true, only scripts that contain "create procedure", "alter procedure", "create function", or "alter function" will run.
 			/// </summary>
 			public bool OnlyRunProcedureAndFunctionScripts = true;
+
+			/// <summary>
+			/// True if the Force Connect button was pressed to get the Database Server names.
+			/// </summary>
+			public bool ForceConnect = false;
 		}
 
 		/// <summary>
@@ -336,7 +341,19 @@ namespace SQL_Script_Runner
 				scriptFiles.Add(script);
 			}
 
-			// Create the settings to pass to the background worker
+			// Get the settings to pass to the worker.
+			var workerSettings = GetScriptRunnerWorkerSettings(scriptFiles);
+
+			// Disable the Output window while running, and run the scripts.
+			DisableControlsWhileRunningScripts();
+			_scriptRunnerWorker.RunWorkerAsync(workerSettings);
+		}
+
+		/// <summary>
+		/// Create the settings to pass to the background worker
+		/// </summary>
+		private ScriptRunnerWorkerSettings GetScriptRunnerWorkerSettings(List<FileInfo> scriptFiles = null)
+		{
 			ScriptRunnerWorkerSettings workerSettings = new ScriptRunnerWorkerSettings();
 			workerSettings.ServerIP = Settings.ServerIP;
 			workerSettings.DatabaseName = Settings.DatabaseName;
@@ -347,10 +364,7 @@ namespace SQL_Script_Runner
 			workerSettings.CopyFailedScriptsToFailedDirectory = Settings.CopyFailedScriptsToFailedDirectory;
 			workerSettings.FailedScriptsDirectory = Settings.FailedScriptsDirectory;
 			workerSettings.OnlyRunProcedureAndFunctionScripts = chkOnlyRunSprocsAndFunctions.IsChecked ?? false;
-
-			// Disable the Output window while running, and run the scripts.
-			DisableControlsWhileRunningScripts();
-			_scriptRunnerWorker.RunWorkerAsync(workerSettings);
+			return workerSettings;
 		}
 
 		/// <summary>
@@ -642,8 +656,12 @@ namespace SQL_Script_Runner
 			// Disable controls while getting the Database Names
 			DisableControlsBeforeDatabaseNamesConnect();
 
+			// Get the settings to pass to the worker.
+			var workerSettings = GetScriptRunnerWorkerSettings();
+			workerSettings.ForceConnect = forceConnect;
+
 			// Connect to the server and retrieve the database names
-			_databaseNameWorker.RunWorkerAsync(Settings.ServerIP);
+			_databaseNameWorker.RunWorkerAsync(workerSettings);
 		}
 
 		/// <summary>
@@ -658,9 +676,11 @@ namespace SQL_Script_Runner
 				return;
 
 			// Connect to the server to get the list of Database Names
-			string serverIP = e.Argument as string;
+			ScriptRunnerWorkerSettings settings = e.Argument as ScriptRunnerWorkerSettings;
 			var serverConnection = new ServerConnection();
-			serverConnection.ConnectionString = "Data Source=" + serverIP + ";Integrated Security=true;User ID=;Password=;Connect Timeout=30;";
+			serverConnection.ConnectionString = string.Format("Data Source={0};Integrated Security={1};User ID={2};Password={3};Connect Timeout=30;",
+				settings.ServerIP, settings.UseIntegreatedSecurity ? "true" : "false", settings.Username, settings.Password);
+
 			var server = new Server(serverConnection);
 
 			// If this operation has been cancelled
@@ -669,12 +689,17 @@ namespace SQL_Script_Runner
 
 			try
 			{
-				// Try and connect to the server. 
+				// Try and connect to the server.
 				server.ConnectionContext.Connect();
 			}
-			// Just eat any connection failure exceptions and exit.
-			catch (ConnectionFailureException ex)
+			// Catch all connection errors.
+			catch (Exception ex)
 			{
+				// If this was a forceful connection attempt, rethrow the error so that it gets displayed to the user in the RunWorkerCompleted function.
+				if (settings.ForceConnect)
+					throw;
+				
+				// Else let's just eat the exception and exit. NOM NOM NOM.
 				return;
 			}
 
@@ -692,7 +717,7 @@ namespace SQL_Script_Runner
 			// If this operation has been cancelled
 			if (e.Cancel)
 				return;
-
+			
 			e.Result = databaseNames;
 		}
 
@@ -706,7 +731,7 @@ namespace SQL_Script_Runner
 			// If this operation was cancelled, just exit, as another request was made and will hit this function.
 			if (e.Cancelled)
 				return;
-
+			
 			// If there was an error
 			if (e.Error != null)
 			{
