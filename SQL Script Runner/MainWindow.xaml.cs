@@ -383,9 +383,11 @@ namespace SQL_Script_Runner
 			int numberOfScriptsThatFailed = 0;
 			int numberOfScriptsThatWerePurposelyNotRanBecauseTheyAreNotSprocsOrFunctions = 0;
 
-			// Start a timer to log how long the operation takes
-			Stopwatch stopwatch = new Stopwatch();
-			stopwatch.Start();
+			// Start a timer to log how long the operation takes.
+			Stopwatch timerToRunAllScripts = Stopwatch.StartNew();
+
+			// Record what time we started running the operations at.
+			DateTime timeOperationsStartedAt = DateTime.Now;
 
 			// Setup our connection and connect to the server
 			var serverConnection = new ServerConnection();
@@ -398,13 +400,36 @@ namespace SQL_Script_Runner
 			output.AppendLine("All Script Summaries (in the order that the scripts were ran)");
 			output.AppendLine("=================================================================\n");
 
+			int numberOfScriptsToRun = settings.ScriptsToRun.Count;
+			int numberOfScriptsRan = 0;
+
 			// Apply all of the scripts
 			foreach (FileInfo file in settings.ScriptsToRun)
 			{
-				// If the file doesn't exist, record it and move onto the next one
-				if (!File.Exists(file.FullName))
+				var fileName = file.Name;
+				var filePath = file.FullName;
+				numberOfScriptsRan++;
+
+				// Update the output to show our progress.
+				string elapsedTimeSoFar = string.Empty;
+				if (timerToRunAllScripts.Elapsed.Minutes > 0)
+					elapsedTimeSoFar += timerToRunAllScripts.Elapsed.Minutes.ToString() + " minute(s) and ";
+				if (timerToRunAllScripts.Elapsed.TotalSeconds < 0.1)	// Make sure we display the time properly, even for super fast operations that took a fraction of a second to complete.
+					elapsedTimeSoFar += (timerToRunAllScripts.Elapsed.TotalSeconds - (timerToRunAllScripts.Elapsed.Minutes * 60)).ToString("#.###") + " seconds";
+				else
+					elapsedTimeSoFar += (timerToRunAllScripts.Elapsed.TotalSeconds - (timerToRunAllScripts.Elapsed.Minutes * 60)).ToString("#.#") + " seconds";
+				string progressToDisplay = string.Format("{0}\nProcessing {1} of {2} at {3}: {4}...\n", output.ToString().Trim(), numberOfScriptsRan, numberOfScriptsToRun, DateTime.Now.ToLongTimeString(), fileName);
+				progressToDisplay += string.Format("Started running at {0}. Has been running for {1}...", timeOperationsStartedAt.ToLongTimeString(), elapsedTimeSoFar);
+				this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, (System.Threading.ThreadStart)delegate()
 				{
-					failedTemp = file.FullName + ": FILE DOES NOT EXIST\n";
+					txtOutput.Text = progressToDisplay;
+					txtOutput.ScrollToEnd();
+				});
+
+				// If the file doesn't exist, record it and move onto the next one
+				if (!File.Exists(filePath))
+				{
+					failedTemp = filePath + ": FILE DOES NOT EXIST\n";
 					scriptsFailed.Append(failedTemp);
 					output.Append(failedTemp + "--------------------------------------------------------------------------------------------\n");
 					numberOfScriptsThatFailed++;
@@ -417,7 +442,7 @@ namespace SQL_Script_Runner
 					try
 					{
 						// Read in the file contents
-						fileContents = File.ReadAllText(file.FullName);
+						fileContents = File.ReadAllText(filePath);
 						
 						// If we should only run sprocs and functions, make sure this script is one of them
 						if (settings.OnlyRunProcedureAndFunctionScripts)
@@ -427,7 +452,7 @@ namespace SQL_Script_Runner
 							{
 								// Log the details that this script was skipped, then move on to the next script
 								numberOfScriptsThatWerePurposelyNotRanBecauseTheyAreNotSprocsOrFunctions++;
-								skippedTemp = file.FullName + ": SKIPPED because it is not a Create/Alter Procedure/Function file\n";
+								skippedTemp = filePath + ": SKIPPED because it is not a Create/Alter Procedure/Function file.\n";
 								scriptsSkipped.Append(skippedTemp);
 								output.Append(skippedTemp);
 								continue;
@@ -452,14 +477,14 @@ namespace SQL_Script_Runner
 							throw ex;
 					}
 
-					output.AppendLine(file.Name + ": Success");
+					output.AppendLine(filePath + ": Success");
 				}
 				// Catch any Scripts that fail to run successfully
 				catch (Exception ex)
 				{
 					numberOfScriptsThatFailed++;
 					failedTemp = "--------------------------------------------------------------------------------------------\n";
-					failedTemp += file.Name + ": FAILED TO RUN\n" + GetExceptionMessages(ex) + "\n";
+					failedTemp += filePath + ": FAILED TO RUN\n" + GetExceptionMessages(ex) + "\n";
 					scriptsFailed.Append(failedTemp);
 					output.Append(failedTemp += "--------------------------------------------------------------------------------------------\n");
 
@@ -475,7 +500,7 @@ namespace SQL_Script_Runner
 							Directory.CreateDirectory(settings.FailedScriptsDirectory);
 
 						// Copy the script file to the Failed directory
-						File.Copy(file.FullName, settings.FailedScriptsDirectory + "\\" + file.Name, true);
+						File.Copy(filePath, settings.FailedScriptsDirectory + "\\" + fileName, true);
 					}
 				}
 			}
@@ -518,16 +543,21 @@ namespace SQL_Script_Runner
 
 			// If all scripts were not ran successfully, tell user to look at log for details.
 			if (numberOfScriptsThatFailed > 0 || numberOfScriptsThatWerePurposelyNotRanBecauseTheyAreNotSprocsOrFunctions > 0)
-				output.Append("See above for details\n");
+				output.Append("See above for details.\n");
 
 
-			// Append how long the operation took to the output
-			stopwatch.Stop();
-			DateTime timeToComplete = new DateTime(stopwatch.Elapsed.Ticks);
-			output.Append("\nTime to complete operation: ");
-			if (timeToComplete.Minute > 0)
-				output.Append(timeToComplete.Minute.ToString() + " minutes and ");
-			output.Append(timeToComplete.Second.ToString() + " seconds.");
+			// Get how long it took to do all of the operations, and create a nice user-friendly string to show it.
+			timerToRunAllScripts.Stop();
+			string timeToCompleteOperations = string.Empty;
+			if (timerToRunAllScripts.Elapsed.Minutes > 0)
+				timeToCompleteOperations += timerToRunAllScripts.Elapsed.Minutes.ToString() + " minute(s) and ";
+			if (timerToRunAllScripts.Elapsed.TotalSeconds < 0.1)	// Make sure we display the time properly, even for super fast operations that took a fraction of a second to complete.
+				timeToCompleteOperations += (timerToRunAllScripts.Elapsed.TotalSeconds - (timerToRunAllScripts.Elapsed.Minutes * 60)).ToString("#.###") + " seconds.";
+			else
+				timeToCompleteOperations += (timerToRunAllScripts.Elapsed.TotalSeconds - (timerToRunAllScripts.Elapsed.Minutes * 60)).ToString("#.#") + " seconds.";
+
+			// Append how long the operations took to the output.
+			output.AppendLine(string.Format("Time it took to run all sql scripts: {0}", timeToCompleteOperations));
 
 			return output.ToString();
 		}
@@ -551,17 +581,19 @@ namespace SQL_Script_Runner
 		/// <param name="e">The <see cref="System.ComponentModel.RunWorkerCompletedEventArgs"/> instance containing the event data.</param>
 		void _scriptRunnerWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
+			// Get the output of the operation.
+			string output = (string)e.Result;
+
 			// If an error occurred, display it an exit
 			if (e.Error != null)
 			{
-				MessageBox.Show(GetExceptionMessages(e.Error), "Error Occurred While Trying To Run Scripts");
-				txtOutput.Text = string.Empty;
-				EnableControlsAfterRunningScripts();
-				return;
+				string errorMessage = GetExceptionMessages(e.Error);
+				string errorTitle = "Error Occurred While Trying To Run Scripts";
+				MessageBox.Show(errorMessage, errorTitle);
+				output += string.Format("\n{0}:\n{1}", errorTitle, errorMessage);
 			}
 
 			// Display the output and scroll to the bottom of the output
-			string output = (string)e.Result;
 			txtOutput.Text += output.Trim();
 			txtOutput.ScrollToEnd();
 

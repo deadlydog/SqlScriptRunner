@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:converters="clr-namespace:SQL_Script_Runner"
-        Title="SQL Script Runner - Created by Daniel Schroeder - v1.3.1" Height="729" Width="800" Icon="/SQL%20Script%20Runner;component/Images/icon.jpg">
+        Title="SQL Script Runner - Created by Daniel Schroeder - v1.3.2" 
+				Height="729" Width="790" ResizeMode="CanMinimize" Icon="/SQL%20Script%20Runner;component/Images/icon.jpg">
 	<Window.Resources>
 		<BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 		<converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
@@ -66,7 +67,7 @@
 		</ComboBox>
 		<Button Content="X" Height="23" HorizontalAlignment="Left" Margin="304,137,0,0" Name="btnRemoveScriptDirectory" VerticalAlignment="Top" Width="25" Click="btnRemoveScriptDirectory_Click" ToolTip="Click to remove the current Path from the combo boxes list of directory paths." Grid.Column="1" />
 		<Button Content="X" Height="23" HorizontalAlignment="Left" Margin="314,13,0,0" Name="btnRemoveServerIP" VerticalAlignment="Top" Width="25" Click="btnRemoveServerIP_Click" ToolTip="Click to remove the current Server IP from the combo boxes list of IPs." />
-		<TextBox Height="203" HorizontalAlignment="Left" Margin="12,476,0,0" Name="txtOutput" VerticalAlignment="Top" Width="640" AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="2" />
+		<TextBox Height="203" HorizontalAlignment="Left" Margin="12,476,0,0" Name="txtOutput" VerticalAlignment="Top" Width="640" AcceptsReturn="True" AcceptsTab="True" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="2" />
 		<Label Content="SQL scripts to run:" Height="28" HorizontalAlignment="Left" Margin="10,160,0,0" Name="label1" VerticalAlignment="Top" />
 		<Label Content="Output:" Height="28" HorizontalAlignment="Left" Margin="12,449,0,0" Name="label5" VerticalAlignment="Top" />
 		<CheckBox Content="Copy Scripts That Fail To Run To Directory..." IsChecked="{Binding Path=Settings.CopyFailedScriptsToFailedDirectory, Mode=TwoWay}" Height="16" HorizontalAlignment="Left" Margin="182,403,0,0" Name="chkCopyFailedScriptsToFailedDirectory" VerticalAlignment="Top" ToolTip="If checked, this will copy any scripts that fail to run into a specified directory." Grid.ColumnSpan="2" />
