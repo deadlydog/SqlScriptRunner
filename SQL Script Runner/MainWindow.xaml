@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:converters="clr-namespace:SQL_Script_Runner"
-        Title="SQL Script Runner - Created by Daniel Schroeder - v1.3.2" 
-				Height="729" Width="790" ResizeMode="CanMinimize" Icon="/SQL%20Script%20Runner;component/Images/icon.jpg">
+        Title="SQL Script Runner - Created by Daniel Schroeder - v1.3.3" 
+				Height="747" Width="790" ResizeMode="CanMinimize" Icon="/SQL%20Script%20Runner;component/Images/icon.jpg">
 	<Window.Resources>
 		<BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 		<converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
@@ -109,5 +109,14 @@
 				<CheckBox Content="Remember" HorizontalAlignment="Right" Margin="0,64,6,9" Name="chkRememberPassword" Grid.Column="1" IsEnabled="{Binding ElementName=radUsernameAndPassword, Path=IsChecked}" ToolTip="Check this to remember your password for the next time this app is opened." />
 			</Grid>
 		</GroupBox>
+		<StatusBar HorizontalAlignment="Left" Height="24" Margin="0,684,0,0" VerticalAlignment="Top" Width="784" Grid.ColumnSpan="2">
+			<TextBlock x:Name="sbtxtTimeStartedRunningScripts" Text="Time Started" ToolTip="The time that the scripts started running." />
+			<Separator />
+			<TextBlock x:Name="sbtxtElapsedTimeOfRunningScripts" Text="Elapsed Time" ToolTip="How long the scripts have been running for." />
+			<Separator />
+			<TextBlock x:Name="sbtxtNumberOfScriptsRan" Text="123 of 456" ToolTip="The number of the script currently running, and the total number of scripts to run." />
+			<Separator />
+			<TextBlock x:Name="sbtxtNameOfCurrentlyRunningScript" Text="Filename of script being ran" ToolTip="The name of the script currently running." />
+		</StatusBar>
 	</Grid>
 </Window>

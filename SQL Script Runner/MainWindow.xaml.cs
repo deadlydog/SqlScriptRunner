@@ -383,11 +383,33 @@ namespace SQL_Script_Runner
 			int numberOfScriptsThatFailed = 0;
 			int numberOfScriptsThatWerePurposelyNotRanBecauseTheyAreNotSprocsOrFunctions = 0;
 
+			int numberOfScriptsToRun = settings.ScriptsToRun.Count;
+			int numberOfScriptsRan = 0;
+
 			// Start a timer to log how long the operation takes.
 			Stopwatch timerToRunAllScripts = Stopwatch.StartNew();
 
-			// Record what time we started running the operations at.
-			DateTime timeOperationsStartedAt = DateTime.Now;
+			// Display when we started running the scripts in the status bar.
+			var timeScriptsStartedRunning = DateTime.Now;
+			this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, (System.Threading.ThreadStart)delegate()
+			{
+				sbtxtTimeStartedRunningScripts.Text = string.Format("{0}", timeScriptsStartedRunning.ToLongTimeString());
+				sbtxtElapsedTimeOfRunningScripts.Text = "0 seconds";	// Start the elapsed time showing 0 seconds.
+			});
+
+			// Start a timer to display how long the scripts have been running for, and have it update once every second.
+			var elapsedTimer = new System.Threading.Timer((x) =>
+			{
+				this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, (System.Threading.ThreadStart)delegate()
+				{
+					var elapsedTime = DateTime.Now - timeScriptsStartedRunning;
+					string elapsedTimeText = string.Empty;
+					if (elapsedTime.Minutes > 0)
+						elapsedTimeText += elapsedTime.Minutes.ToString() + " minute(s) and ";
+					elapsedTimeText += (elapsedTime.TotalSeconds - (elapsedTime.Minutes * 60)).ToString("#") + " seconds";
+					sbtxtElapsedTimeOfRunningScripts.Text = elapsedTimeText;
+				});
+			}, null, 1000, 1000);
 
 			// Setup our connection and connect to the server
 			var serverConnection = new ServerConnection();
@@ -395,14 +417,11 @@ namespace SQL_Script_Runner
 				settings.ServerIP, settings.UseIntegreatedSecurity ? "true" : "false", settings.Username, settings.Password, settings.DatabaseName);
 			var server = new Server(serverConnection);
 			var db = server.Databases[server.ConnectionContext.SqlConnectionObject.Database];
-			output.AppendLine("Connection Info: " + serverConnection.ConnectionString.Replace("Password=" + settings.Password, "Password=[hidden]"));
+			output.AppendLine("Connection Info: " + serverConnection.ConnectionString.Replace("Password=" + settings.Password, "Password=[hidden]") + "\n");
 			output.AppendLine("=================================================================");
 			output.AppendLine("All Script Summaries (in the order that the scripts were ran)");
 			output.AppendLine("=================================================================\n");
-
-			int numberOfScriptsToRun = settings.ScriptsToRun.Count;
-			int numberOfScriptsRan = 0;
-
+			
 			// Apply all of the scripts
 			foreach (FileInfo file in settings.ScriptsToRun)
 			{
@@ -410,19 +429,13 @@ namespace SQL_Script_Runner
 				var filePath = file.FullName;
 				numberOfScriptsRan++;
 
-				// Update the output to show our progress.
-				string elapsedTimeSoFar = string.Empty;
-				if (timerToRunAllScripts.Elapsed.Minutes > 0)
-					elapsedTimeSoFar += timerToRunAllScripts.Elapsed.Minutes.ToString() + " minute(s) and ";
-				if (timerToRunAllScripts.Elapsed.TotalSeconds < 0.1)	// Make sure we display the time properly, even for super fast operations that took a fraction of a second to complete.
-					elapsedTimeSoFar += (timerToRunAllScripts.Elapsed.TotalSeconds - (timerToRunAllScripts.Elapsed.Minutes * 60)).ToString("#.###") + " seconds";
-				else
-					elapsedTimeSoFar += (timerToRunAllScripts.Elapsed.TotalSeconds - (timerToRunAllScripts.Elapsed.Minutes * 60)).ToString("#.#") + " seconds";
-				string progressToDisplay = string.Format("{0}\nProcessing {1} of {2} at {3}: {4}...\n", output.ToString().Trim(), numberOfScriptsRan, numberOfScriptsToRun, DateTime.Now.ToLongTimeString(), fileName);
-				progressToDisplay += string.Format("Started running at {0}. Has been running for {1}...", timeOperationsStartedAt.ToLongTimeString(), elapsedTimeSoFar);
+				// Update the status bar to show our progress.
+				string numberOfScriptsRanText = string.Format("{0} of {1}", numberOfScriptsRan, numberOfScriptsToRun);
 				this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, (System.Threading.ThreadStart)delegate()
 				{
-					txtOutput.Text = progressToDisplay;
+					sbtxtNumberOfScriptsRan.Text = numberOfScriptsRanText;
+					sbtxtNameOfCurrentlyRunningScript.Text = fileName;
+					txtOutput.Text = output.ToString().Trim();
 					txtOutput.ScrollToEnd();
 				});
 
@@ -559,6 +572,9 @@ namespace SQL_Script_Runner
 			// Append how long the operations took to the output.
 			output.AppendLine(string.Format("Time it took to run all sql scripts: {0}", timeToCompleteOperations));
 
+			// Cleanup the timer now that we are done with it.
+			elapsedTimer.Dispose();
+
 			return output.ToString();
 		}
 
@@ -594,7 +610,7 @@ namespace SQL_Script_Runner
 			}
 
 			// Display the output and scroll to the bottom of the output
-			txtOutput.Text += output.Trim();
+			txtOutput.Text = output.Trim();
 			txtOutput.ScrollToEnd();
 
 			// Re-enable the controls now that the scripts are done running
